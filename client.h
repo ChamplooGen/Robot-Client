@@ -4,6 +4,7 @@
 #include <QDialog>
 #include <QTcpSocket>
 
+class QPushButton;
 class QTcpSocket;
 class QNetworkSession;
 class QLabel;
@@ -27,6 +28,12 @@ private slots:
     void sessionOpened();
 
 private:
+// Можно упростить
+    QLabel *hostLabel;
+    QLabel *portLabel;
+    QComboBox *hostCombo;
+    QLineEdit *portLineEdit;
+//*****************************
     QPushButton *quitButton;
     QPushButton *connectToRobot;
 
@@ -43,9 +50,9 @@ private:
     QLabel *directionToTurn;
     QLabel *degreesToTurn;
     QLabel *informMessage;
+    QLabel *videoArea;
 
     QTcpSocket *tcpSocket;
-    QComboBox *hostCombo;
     quint16 blockSize;
 
     QNetworkSession *networkSession;
