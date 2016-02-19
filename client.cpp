@@ -6,6 +6,8 @@
 Client::Client(QWidget *parent)
 :   QDialog(parent), networkSession(0)
 {
+    videoArea = new QLabel(tr("Here will be video from robot"));
+
     directionToTurn = new QLabel (tr("F/B"));
     degreesToTurn = new QLabel (tr("Degree"));
 
@@ -33,7 +35,27 @@ Client::Client(QWidget *parent)
     turnLeftEngine = new QPushButton(tr("Turn left engine"));
     turnRigtEngine = new QPushButton(tr("Turn right engine"));
 
+    // Спорная часть виджета
+    hostLabel = new QLabel(tr("Server name:"));
+    portLabel = new QLabel(tr("Server port:"));
+
+    hostCombo = new QComboBox;
+    hostCombo->setEditable(true);
+
+    portLineEdit = new QLineEdit;
+    portLineEdit->setValidator(new QIntValidator(1, 65535, this));
 //************************************** - Не менять
+    // find out name of this machine
+    QString name = QHostInfo::localHostName();
+    if (!name.isEmpty()) {
+        hostCombo->addItem(name);
+        QString domain = QHostInfo::localDomainName();
+        if (!domain.isEmpty())
+            hostCombo->addItem(name + QChar('.') + domain);
+    }
+    if (name != QString("localhost"))
+        hostCombo->addItem(QString("localhost"));
+    // find out IP addresses of this machine
     QList<QHostAddress> ipAddressesList = QNetworkInterface::allAddresses();
     // add non-localhost addresses
     for (int i = 0; i < ipAddressesList.size(); ++i) {
@@ -47,17 +69,17 @@ Client::Client(QWidget *parent)
     }
 //************************************** - Не менять
 
-
 // Создаем сокет
     tcpSocket = new QTcpSocket(this);
 // Подключаем сигналы
+    connect(quitButton, SIGNAL(clicked()), this, SLOT(close()));
     connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(socketReadyRead()));
     connect(tcpSocket, SIGNAL(connected()), this, SLOT(socketConnected()));
     connect(tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
             this, SLOT(displayError(QAbstractSocket::SocketError)));
 
 //*************************************
-
+// Левая верхняя часть layout'a
         QGridLayout *leftTopLayout = new QGridLayout;
         leftTopLayout->addWidget(directionToTurn, 0, 1);
         leftTopLayout->addWidget(degreesToTurn, 0, 2);
@@ -68,11 +90,27 @@ Client::Client(QWidget *parent)
 
         leftTopLayout->addWidget(turnLeftEngine, 2, 0);
         leftTopLayout->addWidget(leftEngineCombo, 2, 1);
-        leftTopLayout->addWidget(rightEngineDegrees, 2, 2);
+        leftTopLayout->addWidget(leftEngineDegrees, 2, 2);
 
-        leftTopLayout->addWidget(getImage, 3, 0, 3, 3, Qt::AlignCenter);
+        leftTopLayout->addWidget(getImage, 3, 0, 1, 3, Qt::AlignCenter);
 
-        setLayout(leftTopLayout);
+// Правая нижняя часть layout'a
+        QGridLayout *rightBottomLayout = new QGridLayout;
+        rightBottomLayout->addWidget(hostLabel, 0, 0);
+        rightBottomLayout->addWidget(portLabel, 1, 0);
+        rightBottomLayout->addWidget(hostCombo, 0, 1);
+        rightBottomLayout->addWidget(portLineEdit, 1, 1);
+        rightBottomLayout->addWidget(connectToRobot, 2, 0);
+        rightBottomLayout->addWidget(quitButton, 2, 1);
+//Основная часть layout'a
+        QGridLayout *mainLayout = new QGridLayout;
+        mainLayout->addLayout(leftTopLayout, 0, 0);
+        mainLayout->addWidget(videoArea, 0, 1, 1, 1, Qt::AlignCenter);
+        mainLayout->addWidget(informMessage, 1, 0, 1, 1, Qt::AlignCenter);
+        mainLayout->addLayout(rightBottomLayout, 1, 1);
+
+        setLayout(mainLayout);
+        resize(550, 300);
 
     setWindowTitle(tr("Robot Client"));
 
