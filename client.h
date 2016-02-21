@@ -18,14 +18,38 @@ class Client : public QDialog
 public:
     Client(QWidget *parent = 0);
 
+    struct Command
+    {
+        char keyWord;
+        quint16 length;
+        QString data;
+    };
+
 private slots:
-// слот для обработки сигналов сокета
+// слот для подключения к роботу - можно упростить, убрав hostCombo и portLineEdit (сделать по default)
+    void connectToRobot();
+
+// слот для проверки того, что подключились к роботу - в дальнейшем можно убрать,
+// перевалив его функции на socketReadyRead();
     void socketConnected();
-// слот для об
+
+// слот для обработки информации из сокета
     void socketReadyRead();
+
+// слот для пересылки команд
+
+    void sendCommand(Command command);
+    void buildCommand();
+
+
+
+
 //***********************************
     void displayError(QAbstractSocket::SocketError socketError);
     void sessionOpened();
+
+signals:
+    void sendCommandSignal(Command command);
 
 private:
 // Можно упростить
@@ -35,15 +59,15 @@ private:
     QLineEdit *portLineEdit;
 //*****************************
     QPushButton *quitButton;
-    QPushButton *connectToRobot;
+    QPushButton *connectToRobotButton;
 
     QPushButton *getImage;
 
-    QPushButton *turnLeftEngine;
+    QPushButton *turnLeftEngineButton;
     QComboBox *leftEngineCombo;
     QLineEdit *leftEngineDegrees;
 
-    QPushButton *turnRigtEngine;
+    QPushButton *turnRigtEngineButton;
     QComboBox *rightEngineCombo;
     QLineEdit *rightEngineDegrees;
 
@@ -56,6 +80,9 @@ private:
     quint16 blockSize;
 
     QNetworkSession *networkSession;
+
+
+
 };
 
 #endif
