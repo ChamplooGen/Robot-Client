@@ -12,28 +12,30 @@ Client::Client(QWidget *parent)
     degreesToTurn = new QLabel (tr("Degree"));
 
     leftEngineCombo = new QComboBox;
-    leftEngineCombo->setEditable(true);
+    leftEngineCombo->setEditable(false);
     leftEngineCombo->addItem(tr("F"));
     leftEngineCombo->addItem(tr("B"));
 
     rightEngineCombo = new QComboBox;
-    rightEngineCombo->setEditable(true);
+    rightEngineCombo->setEditable(false);
     rightEngineCombo->addItem(tr("F"));
     rightEngineCombo->addItem(tr("B"));
 
     leftEngineDegrees = new QLineEdit;
     leftEngineDegrees->setValidator(new QIntValidator(1, 65535, this));
+    leftEngineDegrees->setFixedSize(80, 30);
 
     rightEngineDegrees = new QLineEdit;
     rightEngineDegrees->setValidator(new QIntValidator(1, 65535, this));
+    rightEngineDegrees->setFixedSize(80, 30);
 
     informMessage = new QLabel(tr("Starting the program... Connect to robot."));
 
     quitButton = new QPushButton (tr("Exit"));
-    connectToRobot = new QPushButton (tr("Connect to robot"));
+    connectToRobotButton = new QPushButton (tr("Connect to robot"));
     getImage = new QPushButton (tr("Get image from camera"));
-    turnLeftEngine = new QPushButton(tr("Turn left engine"));
-    turnRigtEngine = new QPushButton(tr("Turn right engine"));
+    turnLeftEngineButton = new QPushButton(tr("Turn left engine"));
+    turnRigtEngineButton = new QPushButton(tr("Turn right engine"));
 
     // Спорная часть виджета
     hostLabel = new QLabel(tr("Server name:"));
@@ -73,10 +75,14 @@ Client::Client(QWidget *parent)
     tcpSocket = new QTcpSocket(this);
 // Подключаем сигналы
     connect(quitButton, SIGNAL(clicked()), this, SLOT(close()));
+    connect(connectToRobotButton, SIGNAL(clicked()), this, SLOT(connectToRobot()));
     connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(socketReadyRead()));
     connect(tcpSocket, SIGNAL(connected()), this, SLOT(socketConnected()));
     connect(tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
             this, SLOT(displayError(QAbstractSocket::SocketError)));
+
+    connect(turnLeftEngineButton, SIGNAL(clicked()), this, SLOT(buildCommand()));
+    connect(turnLeftEngineButton, SIGNAL(sendCommandSignal(Command)), this, SLOT(sendCommand(Command)));
 
 //*************************************
 // Левая верхняя часть layout'a
@@ -84,11 +90,11 @@ Client::Client(QWidget *parent)
         leftTopLayout->addWidget(directionToTurn, 0, 1);
         leftTopLayout->addWidget(degreesToTurn, 0, 2);
 
-        leftTopLayout->addWidget(turnRigtEngine, 1, 0);
+        leftTopLayout->addWidget(turnRigtEngineButton, 1, 0);
         leftTopLayout->addWidget(rightEngineCombo, 1, 1);
         leftTopLayout->addWidget(rightEngineDegrees, 1, 2);
 
-        leftTopLayout->addWidget(turnLeftEngine, 2, 0);
+        leftTopLayout->addWidget(turnLeftEngineButton, 2, 0);
         leftTopLayout->addWidget(leftEngineCombo, 2, 1);
         leftTopLayout->addWidget(leftEngineDegrees, 2, 2);
 
@@ -100,7 +106,7 @@ Client::Client(QWidget *parent)
         rightBottomLayout->addWidget(portLabel, 1, 0);
         rightBottomLayout->addWidget(hostCombo, 0, 1);
         rightBottomLayout->addWidget(portLineEdit, 1, 1);
-        rightBottomLayout->addWidget(connectToRobot, 2, 0);
+        rightBottomLayout->addWidget(connectToRobotButton, 2, 0);
         rightBottomLayout->addWidget(quitButton, 2, 1);
 //Основная часть layout'a
         QGridLayout *mainLayout = new QGridLayout;
@@ -137,12 +143,20 @@ Client::Client(QWidget *parent)
         //statusLabel->setText(tr("Opening network session."));
         networkSession->open();
     }
-//************************************************************************* - Не менять
+    //************************************************************************* - Не менять
+}
+
+void Client::connectToRobot()
+{
+    connectToRobotButton->setEnabled(false);
+    blockSize = 0;
+    tcpSocket->abort();
+    tcpSocket->connectToHost(hostCombo->currentText(), portLineEdit->text().toInt());
 }
 
 void Client::socketConnected()
 {
-
+    informMessage->setText(tr("You were sucessfully connected.\n Congratulations!"));
 }
 
 void Client::socketReadyRead()  // обработка данных от сервера
@@ -162,6 +176,31 @@ void Client::socketReadyRead()  // обработка данных от серв
 
     QString message;
     in >> message;
+    //informMessage->setText(message);
+}
+
+void Client::sendCommand(Command command)
+{
+    QByteArray block;
+    QDataStream out(&block, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_4_0);
+
+    out<<quint16(0);
+    out<<command.keyWord;
+    out<<command.data;
+    out.device()->seek(0);
+    out<<(quint16)(block.size() - sizeof(quint16));
+
+    tcpSocket->write(block);
+}
+
+void Client::buildCommand()
+{
+    Command command;
+//    command.data = ;
+//    command.keyWord = ;
+//    command.length = ;
+    emit sendCommandSignal(command);
 }
 
 void Client::displayError(QAbstractSocket::SocketError socketError)
