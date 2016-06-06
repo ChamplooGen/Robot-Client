@@ -72,7 +72,9 @@ Client::Client(QWidget *parent)
 //************************************** - Не менять
 
 // Создаем сокет
+
     tcpSocket = new QTcpSocket(this);
+
 // Подключаем сигналы
     connect(quitButton, SIGNAL(clicked()), this, SLOT(close()));
     connect(connectToRobotButton, SIGNAL(clicked()), this, SLOT(connectToRobot()));
@@ -198,8 +200,11 @@ void Client::sendCommand(Command command)
     qDebug() << " Data is empty? - " << block.isEmpty();
 
 
-
+    qDebug() << " Socket is writable? " << tcpSocket->isWritable();
     tcpSocket->write(block);
+
+    qDebug() << " Amount of available bytes in socket: " << tcpSocket->bytesAvailable();
+
     qDebug() << " Command was sent to robot";
     informMessage->setText(" Your command was sent to robot.\n" + QString(command.keyWord) + " "+ command.data);
 }
