@@ -82,7 +82,7 @@ Client::Client(QWidget *parent)
             this, SLOT(displayError(QAbstractSocket::SocketError)));
 
     connect(turnLeftEngineButton, SIGNAL(clicked()), this, SLOT(buildCommand()));
-    connect(turnLeftEngineButton, SIGNAL(sendCommandSignal(Command)), this, SLOT(sendCommand(Command)));
+    connect(this, SIGNAL(sendCommandSignal(Command)), this, SLOT(sendCommand(Command)));
 
 //*************************************
 // Левая верхняя часть layout'a
@@ -193,7 +193,7 @@ void Client::sendCommand(Command command)
 
     tcpSocket->write(block);
     qDebug() << " Command was sent to robot";
-    informMessage->setText(" Your command was sent to robot.");
+    informMessage->setText(" Your command was sent to robot.\n" + QString(command.keyWord) + " "+ command.data);
 }
 
 void Client::buildCommand()
