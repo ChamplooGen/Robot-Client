@@ -192,14 +192,18 @@ void Client::sendCommand(Command command)
     out<<(quint16)(block.size() - sizeof(quint16));
 
     tcpSocket->write(block);
+    qDebug() << " Command was sent to robot";
+    informMessage->setText(" Your command was sent to robot.");
 }
 
 void Client::buildCommand()
 {
     Command command;
-//    command.data = ;
-//    command.keyWord = ;
-//    command.length = ;
+    command.data.append('l');
+    command.data.append(leftEngineCombo->currentText());
+    command.data.append(leftEngineDegrees->text());
+    command.keyWord = 'T';
+    //command.length = ;    -- Нужно ли вообще поле length?
     emit sendCommandSignal(command);
 }
 
