@@ -21,7 +21,6 @@ public:
     struct Command
     {
         char keyWord;
-        quint16 length;
         QString data;
     };
 

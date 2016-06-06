@@ -185,11 +185,19 @@ void Client::sendCommand(Command command)
     QDataStream out(&block, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_4_0);
 
-    out<<quint16(0);
-    out<<command.keyWord;
-    out<<command.data;
+    out << quint16(0);
+    qDebug() << " 1)Data: " << block;
+    out << QChar(command.keyWord);
+    qDebug() << " 2)Data: " << block;
+    out << command.data;
+    qDebug() << " 3)Data: " << block;
     out.device()->seek(0);
-    out<<(quint16)(block.size() - sizeof(quint16));
+    out << quint16(block.size() - sizeof(quint16));
+
+    qDebug() << " 4)Data: " << block;
+    qDebug() << " Data is empty? - " << block.isEmpty();
+
+
 
     tcpSocket->write(block);
     qDebug() << " Command was sent to robot";
@@ -203,7 +211,7 @@ void Client::buildCommand()
     command.data.append(leftEngineCombo->currentText());
     command.data.append(leftEngineDegrees->text());
     command.keyWord = 'T';
-    //command.length = ;    -- Нужно ли вообще поле length?
+    //command. = ;    -- Нужно ли вообще поле length?
     emit sendCommandSignal(command);
 }
 
