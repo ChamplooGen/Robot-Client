@@ -23,6 +23,10 @@ public:
         char keyWord;
         QString data;
     };
+protected:
+    virtual void keyPressEvent(QKeyEvent *event);
+    virtual void keyReleaseEvent(QKeyEvent *event);
+//    virtual bool event(QEvent *event);
 
 private slots:
 // слот для подключения к роботу - можно упростить, убрав hostCombo и portLineEdit (сделать по default)
@@ -37,10 +41,14 @@ private slots:
 
 // слот для пересылки команд
 
+    void buildMoveForfardCmd();     // движение вперед
+    void buildMoveBackCmd();        // движение назад
+    void buildMoveLeftCmd();        // поворот влево
+    void buildMoveRightCmd();       // поворот вправо
+    void buildMoveStopCmd();        // остановка
+
+    void buildCamCmd();
     void sendCommand(Command command);
-    void buildCommand();
-
-
 
 
 //***********************************
@@ -66,7 +74,7 @@ private:
     QComboBox *leftEngineCombo;
     QLineEdit *leftEngineDegrees;
 
-    QPushButton *turnRigtEngineButton;
+    QPushButton *turnRightEngineButton;
     QComboBox *rightEngineCombo;
     QLineEdit *rightEngineDegrees;
 
