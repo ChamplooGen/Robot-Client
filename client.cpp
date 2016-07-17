@@ -35,40 +35,40 @@ Client::Client(QWidget *parent)
     connectToRobotButton = new QPushButton (tr("Connect to robot"));
     getImage = new QPushButton (tr("Get image from camera"));
     turnLeftEngineButton = new QPushButton(tr("Turn left engine"));
-    turnRigtEngineButton = new QPushButton(tr("Turn right engine"));
+    turnRightEngineButton = new QPushButton(tr("Turn right engine"));
 
     // Спорная часть виджета
     hostLabel = new QLabel(tr("Server name:"));
     portLabel = new QLabel(tr("Server port:"));
 
-    hostCombo = new QComboBox;
-    hostCombo->setEditable(true);
+    hostCombo = new QLineEdit;
+    //hostCombo->setEditable(true);
 
     portLineEdit = new QLineEdit;
     portLineEdit->setValidator(new QIntValidator(1, 65535, this));
 //************************************** - Не менять
-    // find out name of this machine
-    QString name = QHostInfo::localHostName();
-    if (!name.isEmpty()) {
-        hostCombo->addItem(name);
-        QString domain = QHostInfo::localDomainName();
-        if (!domain.isEmpty())
-            hostCombo->addItem(name + QChar('.') + domain);
-    }
-    if (name != QString("localhost"))
-        hostCombo->addItem(QString("localhost"));
-    // find out IP addresses of this machine
-    QList<QHostAddress> ipAddressesList = QNetworkInterface::allAddresses();
-    // add non-localhost addresses
-    for (int i = 0; i < ipAddressesList.size(); ++i) {
-        if (!ipAddressesList.at(i).isLoopback())
-            hostCombo->addItem(ipAddressesList.at(i).toString());
-    }
-    // add localhost addresses
-    for (int i = 0; i < ipAddressesList.size(); ++i) {
-        if (ipAddressesList.at(i).isLoopback())
-            hostCombo->addItem(ipAddressesList.at(i).toString());
-    }
+//    // find out name of this machine
+//    QString name = QHostInfo::localHostName();
+//    if (!name.isEmpty()) {
+//        hostCombo->addItem(name);
+//        QString domain = QHostInfo::localDomainName();
+//        if (!domain.isEmpty())
+//            hostCombo->addItem(name + QChar('.') + domain);
+//    }
+//    if (name != QString("localhost"))
+//        hostCombo->addItem(QString("localhost"));
+//    // find out IP addresses of this machine
+//    QList<QHostAddress> ipAddressesList = QNetworkInterface::allAddresses();
+//    // add non-localhost addresses
+//    for (int i = 0; i < ipAddressesList.size(); ++i) {
+//        if (!ipAddressesList.at(i).isLoopback())
+//            hostCombo->addItem(ipAddressesList.at(i).toString());
+//    }
+//    // add localhost addresses
+//    for (int i = 0; i < ipAddressesList.size(); ++i) {
+//        if (ipAddressesList.at(i).isLoopback())
+//            hostCombo->addItem(ipAddressesList.at(i).toString());
+//    }
 //************************************** - Не менять
 
 // Создаем сокет
@@ -83,7 +83,10 @@ Client::Client(QWidget *parent)
     connect(tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
             this, SLOT(displayError(QAbstractSocket::SocketError)));
 
-    connect(turnLeftEngineButton, SIGNAL(clicked()), this, SLOT(buildCommand()));
+
+//    connect(turnLeftEngineButton, SIGNAL(clicked()), this, SLOT(buildLeftEngineCommand()));
+//    connect(turnRightEngineButton, SIGNAL(clicked()), this, SLOT(buildRightEngineCommand()));
+    connect(getImage, SIGNAL(clicked()), this, SLOT(buildCamCmd()));
     connect(this, SIGNAL(sendCommandSignal(Command)), this, SLOT(sendCommand(Command)));
 
 //*************************************
@@ -92,7 +95,7 @@ Client::Client(QWidget *parent)
         leftTopLayout->addWidget(directionToTurn, 0, 1);
         leftTopLayout->addWidget(degreesToTurn, 0, 2);
 
-        leftTopLayout->addWidget(turnRigtEngineButton, 1, 0);
+        leftTopLayout->addWidget(turnRightEngineButton, 1, 0);
         leftTopLayout->addWidget(rightEngineCombo, 1, 1);
         leftTopLayout->addWidget(rightEngineDegrees, 1, 2);
 
@@ -148,12 +151,76 @@ Client::Client(QWidget *parent)
     //************************************************************************* - Не менять
 }
 
+void Client::keyPressEvent(QKeyEvent *event)
+{
+    int key = event->key(); // целочисленный код клавиши
+    switch (key)
+    {
+        case Qt::Key_Left:
+            buildMoveLeftCmd();
+        break;
+
+        case Qt::Key_Right:
+            buildMoveRightCmd();
+        break;
+
+        case Qt::Key_Up:
+            buildMoveForfardCmd();
+        break;
+
+        case Qt::Key_Down:
+            buildMoveBackCmd();
+        break;
+
+        case Qt::Key_Space:
+            buildMoveStopCmd();
+        break;
+
+        case Qt::Key_I:
+            buildCamCmd();
+        break;
+
+        case Qt::Key_F1:
+            this->setFocus();
+        break;
+//        default:
+//        QWidget::event(event);
+//        break;
+    }
+
+}
+
+//void Client::keyReleaseEvent(QKeyEvent *event)
+//{
+//    int key = event->key(); // целочисленный код клавиши
+//    switch (key)
+//    {
+//        case Qt::Key_Left:
+//            buildMoveStopCmd();
+//        break;
+
+//        case Qt::Key_Right:
+//            buildMoveStopCmd();
+//        break;
+
+//        case Qt::Key_Up:
+//            buildMoveStopCmd();
+//        break;
+
+//        case Qt::Key_Down:
+//            buildMoveStopCmd();
+//        break;
+//    }
+//}
+
+
 void Client::connectToRobot()
 {
     connectToRobotButton->setEnabled(false);
     blockSize = 0;
     tcpSocket->abort();
-    tcpSocket->connectToHost(hostCombo->currentText(), portLineEdit->text().toInt());
+    tcpSocket->connectToHost(hostCombo->text(), portLineEdit->text().toInt());
+    this->setFocus();
 }
 
 void Client::socketConnected()
@@ -181,6 +248,63 @@ void Client::socketReadyRead()  // обработка данных от серв
     //informMessage->setText(message);
 }
 
+void Client::buildMoveForfardCmd()
+{
+    Command command;
+    command.keyWord = 'M';      // Move
+    command.data.append('R');   // Run
+    command.data.append('F');   // Forward
+
+    emit sendCommandSignal(command);
+}
+
+void Client::buildMoveBackCmd()
+{
+    Command command;
+    command.keyWord = 'M';
+    command.data.append('R');
+    command.data.append('B');
+
+    emit sendCommandSignal(command);
+}
+
+void Client::buildMoveLeftCmd()
+{
+    Command command;
+    command.keyWord = 'M';
+    command.data.append('R');
+    command.data.append('L');
+
+    emit sendCommandSignal(command);
+}
+
+void Client::buildMoveRightCmd()
+{
+    Command command;
+    command.keyWord = 'M';
+    command.data.append('R');
+    command.data.append('R');
+
+    emit sendCommandSignal(command);
+}
+
+void Client::buildMoveStopCmd()
+{
+    Command command;
+    command.keyWord = 'M';
+    command.data.append('S');   // Stop
+
+    emit sendCommandSignal(command);
+}
+
+void Client::buildCamCmd()
+{
+    Command command;
+    command.keyWord = 'I';
+
+    emit sendCommandSignal(command);
+}
+
 void Client::sendCommand(Command command)
 {
     QByteArray block;
@@ -196,28 +320,16 @@ void Client::sendCommand(Command command)
     out.device()->seek(0);
     out << quint16(block.size() - sizeof(quint16));
 
-    qDebug() << " 4)Data: " << block;
-    qDebug() << " Data is empty? - " << block.isEmpty();
+//    qDebug() << " 4)Data: " << block;
+//    qDebug() << " Data is empty? - " << block.isEmpty();
 
 
-    qDebug() << " Socket is writable? " << tcpSocket->isWritable();
+//    qDebug() << " Socket is writable? " << tcpSocket->isWritable();
+//    qDebug() << " Amount of available bytes in socket: " << tcpSocket->bytesAvailable();
+
     tcpSocket->write(block);
-
-    qDebug() << " Amount of available bytes in socket: " << tcpSocket->bytesAvailable();
-
     qDebug() << " Command was sent to robot";
     informMessage->setText(" Your command was sent to robot.\n" + QString(command.keyWord) + " "+ command.data);
-}
-
-void Client::buildCommand()
-{
-    Command command;
-    command.data.append('l');
-    command.data.append(leftEngineCombo->currentText());
-    command.data.append(leftEngineDegrees->text());
-    command.keyWord = 'T';
-    //command. = ;    -- Нужно ли вообще поле length?
-    emit sendCommandSignal(command);
 }
 
 void Client::displayError(QAbstractSocket::SocketError socketError)
